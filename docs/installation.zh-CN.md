@@ -1,3 +1,5 @@
+> **分支二进制部署：** 修复版 systemd 部署见[分支维护说明](fork-maintenance.zh-CN.md)。下文官方镜像和上游安装脚本不包含本分支的旗帜修复。
+
 [English](installation.md) | 简体中文
 
 # 安装部署指南

@@ -1,3 +1,5 @@
+> **Fork binaries:** For the patched systemd deployment, use the [fork maintenance guide](fork-maintenance.md). Official images and the upstream install script below do not contain this fork’s flag fix.
+
 English | [简体中文](installation.zh-CN.md)
 
 # Installation Guide

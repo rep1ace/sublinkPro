@@ -1,0 +1,105 @@
+name: Fork Build and Release
+
+on:
+  push:
+    branches: [stable]
+    tags: ['v*-tw.*']
+  pull_request:
+    branches: [stable]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fork-build-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Enable Yarn
+        run: npm install --global corepack@0.34.5 && corepack enable
+      - name: Check flag regressions
+        run: node --test scripts/tests/country-flags.test.mjs
+      - name: Install frontend dependencies
+        working-directory: webs
+        run: yarn install --immutable
+      - name: Lint frontend
+        working-directory: webs
+        run: yarn run lint
+      - name: Build frontend
+        working-directory: webs
+        run: yarn run build
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Check Go formatting
+        run: test -z "$(gofmt -l $(git ls-files '*.go'))"
+      - uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.12.2
+      - name: Test backend
+        run: go test ./...
+      - name: Build Linux amd64 binary
+        env:
+          BUILD_REF: ${{ github.ref_name }}
+          BUILD_SHA: ${{ github.sha }}
+          REF_TYPE: ${{ github.ref_type }}
+        run: |
+          set -euo pipefail
+          if [ "$REF_TYPE" = tag ]; then
+            [[ "$BUILD_REF" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-tw\.[0-9]+$ ]]
+            [[ "$BUILD_REF" == "$(cat .github/upstream-version)-tw."* ]]
+            printf '%s\n' "$BUILD_REF" > VERSION
+          else
+            printf '%s-tw-dev.%s\n' "$(cat .github/upstream-version)" "${BUILD_SHA:0:7}" > VERSION
+          fi
+          cp -a webs/dist static
+          mkdir -p build
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -tags=prod -ldflags='-s -w' -o build/sublinkPro-linux-amd64 .
+          cd build
+          sha256sum sublinkPro-linux-amd64 > SHA256SUMS
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sublinkPro-linux-amd64
+          path: build/*
+          retention-days: 14
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: sublinkPro-linux-amd64
+          path: build
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          cat > release-notes.md <<EOF
+          Based on upstream $(cat .github/upstream-version).
+
+          - Preserve TW → 🇹🇼 in the country rules UI, node displays and backend renaming.
+          - Use 🇹🇼 for Taiwan groups in the bundled default templates.
+          - Linux amd64 binary with the frontend embedded; compatible with the existing systemd deployment.
+          - Verify the download with SHA256SUMS. Back up the database before upgrading.
+
+          基于上游 $(cat .github/upstream-version)，修复前后端 TW 旗帜映射及默认模板。
+          已存在数据库中的模板和节点名称不会被自动改写；请按需手动更新。
+          EOF
+          gh release create "$RELEASE_TAG" build/* --verify-tag --title "$RELEASE_TAG" --notes-file release-notes.md --prerelease=false --latest

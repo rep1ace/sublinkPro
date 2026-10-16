@@ -18,8 +18,7 @@ export const isoToFlag = (isoCode, fallback = '') => {
   const code = normalizeCountryCode(isoCode);
   if (!COUNTRY_CODE_PATTERN.test(code)) return fallback;
 
-  const flagCode = code === 'TW' ? 'CN' : code;
-  const codePoints = flagCode.split('').map((char) => REGIONAL_INDICATOR_OFFSET + char.charCodeAt(0));
+  const codePoints = code.split('').map((char) => REGIONAL_INDICATOR_OFFSET + char.charCodeAt(0));
   return String.fromCodePoint(...codePoints);
 };
 

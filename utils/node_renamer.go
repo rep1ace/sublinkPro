@@ -335,18 +335,13 @@ func HasActiveNodeNameFilter(rulesJSON string) bool {
 
 // ISOToFlag 将国家ISO代码转换为国旗emoji
 // isoCode: 两位ISO国家代码 (如 "CN", "US", "HK")
-// TW会转换为中国国旗，未知/无效代码返回白旗 🏳️
+// 未知/无效代码返回白旗 🏳️
 func ISOToFlag(isoCode string) string {
 	if isoCode == "" || len(isoCode) != 2 {
 		return "🏳️" // 未知国旗使用白旗
 	}
 
 	code := strings.ToUpper(isoCode)
-
-	// TW使用中国国旗
-	if code == "TW" {
-		code = "CN"
-	}
 
 	// 检查是否为有效的字母代码
 	for _, c := range code {

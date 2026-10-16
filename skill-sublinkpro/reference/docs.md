@@ -1,3 +1,5 @@
+> **rep1ace fork maintenance:** [English](../../docs/fork-maintenance.md) | [简体中文](../../docs/fork-maintenance.zh-CN.md). For these fork-specific pages, use `rep1ace/sublinkPro` and branch `stable` instead of the upstream URL patterns below.
+
 # SublinkPro Documentation Map (online manual)
 
 This turns the skill into an **online instruction manual** for SublinkPro: when the

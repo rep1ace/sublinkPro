@@ -1,3 +1,5 @@
+> **rep1ace 分支：** 界面、节点重命名和内置模板中 TW 均使用 🇹🇼。GitHub Actions 构建 Linux amd64 修复版，并为上游稳定版创建更新 PR。参见[维护说明](docs/fork-maintenance.zh-CN.md)。
+
 <div align="center">
   <img src="webs/src/assets/images/logo.svg" width="280px" />
   

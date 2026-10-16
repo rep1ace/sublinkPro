@@ -1,0 +1,84 @@
+name: Fork Sync Upstream Stable
+
+on:
+  schedule:
+    - cron: '23 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+concurrency:
+  group: fork-sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.repository == 'rep1ace/sublinkPro'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: stable
+          fetch-depth: 0
+      - name: Prepare stable update PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          upstream=ZeroDeng01/sublinkPro
+          latest=$(gh api "repos/$upstream/releases/latest" --jq '.tag_name')
+          [[ "$latest" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          current=$(cat .github/upstream-version)
+          [[ "$current" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          if [ "$latest" = "$current" ]; then
+            echo "Already based on $latest" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git fetch --no-tags "https://github.com/$upstream.git" "refs/tags/$current:refs/upstream/$current" "refs/tags/$latest:refs/upstream/$latest"
+          upstream_sha=$(git rev-parse "refs/upstream/$latest^{commit}")
+          if ! git merge-base --is-ancestor "refs/upstream/$current^{commit}" "$upstream_sha"; then
+            echo 'Upstream is not a descendant of the current stable tag; review manually.' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          branch="updates/upstream-$latest"
+          git switch -c "$branch"
+          if ! git merge --no-ff --no-commit "$upstream_sha"; then
+            {
+              echo "### Merge conflict updating to $latest"
+              echo 'Resolve these files locally; the stable branch has not been changed:'
+              git diff --name-only --diff-filter=U
+            } >> "$GITHUB_STEP_SUMMARY"
+            git merge --abort
+            exit 1
+          fi
+          printf '%s\n' "$latest" > .github/upstream-version
+          git add .github/upstream-version
+          git commit -m "chore(upstream): merge stable $latest"
+          previous=$(git ls-remote origin "refs/heads/$branch" | cut -f1)
+          git push --force-with-lease="refs/heads/$branch:$previous" origin "HEAD:refs/heads/$branch"
+          mkdir -p .agents/.tmp
+          cat > .agents/.tmp/upstream-pr.md <<EOF
+          Merge upstream stable **$latest** into the patched stable branch, preserving the TW flag fix.
+
+          Upstream release: https://github.com/$upstream/releases/tag/$latest
+
+          Review the build results and diff before merging. This does not deploy to the server.
+          After merging, create and push a tag such as $latest-tw.1 to publish a patched binary.
+          EOF
+          existing=$(gh pr list --repo "$REPOSITORY" --base stable --head "$branch" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh pr edit "$existing" --repo "$REPOSITORY" --title "chore(upstream): update to $latest" --body-file .agents/.tmp/upstream-pr.md
+          else
+            gh pr create --repo "$REPOSITORY" --base stable --head "$branch" --title "chore(upstream): update to $latest" --body-file .agents/.tmp/upstream-pr.md
+          fi
+          # GITHUB_TOKEN pushes/PRs do not trigger push/pull_request CI.
+          # An explicit workflow_dispatch runs the full build for this commit.
+          gh workflow run fork-build.yml --repo "$REPOSITORY" --ref "$branch"
+          echo "Prepared update to $latest; stable and production remain unchanged." >> "$GITHUB_STEP_SUMMARY"

@@ -57,29 +57,8 @@ import {
 } from 'api/countryRules';
 import Pagination from 'components/Pagination';
 import { withAlpha } from 'utils/colorUtils';
+import { isoToFlag as getCountryFlag } from 'utils/countryDisplay';
 import useResolvedColorScheme from 'hooks/useResolvedColorScheme';
-
-// ==============================|| UTILITY FUNCTIONS ||============================== //
-
-/**
- * Convert country code to flag emoji
- * @param {string} countryCode - Two-letter country code (e.g., 'US', 'CN', 'HK')
- * @returns {string} Flag emoji (e.g., '🇺🇸', '🇨🇳', '🇭🇰')
- */
-const getCountryFlag = (countryCode) => {
-  if (!countryCode || countryCode.length !== 2) return '';
-
-  // 特殊处理：TW 使用中国国旗
-  if (countryCode.toUpperCase() === 'TW') {
-    return '🇨🇳';
-  }
-
-  const codePoints = countryCode
-    .toUpperCase()
-    .split('')
-    .map((char) => 127397 + char.charCodeAt());
-  return String.fromCodePoint(...codePoints);
-};
 
 // ==============================|| COUNTRY RULES MANAGEMENT ||============================== //
 

@@ -1,3 +1,5 @@
+> **rep1ace fork:** Patched Linux amd64 binaries are released from this fork. Keep the existing systemd service and data paths; see [fork maintenance](../../docs/fork-maintenance.md) for build, update and rollback details. The upstream install script and official Docker images do not include the patch.
+
 # SublinkPro Deployment Reference
 
 The factual, copy-pasteable command catalog the agent uses when deploying or

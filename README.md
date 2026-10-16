@@ -1,3 +1,5 @@
+> **rep1ace fork:** TW uses 🇹🇼 throughout the UI, node renaming and bundled templates. Patched Linux amd64 releases and stable upstream update PRs are built with GitHub Actions. See [fork maintenance](docs/fork-maintenance.md).
+
 <div align="center">
   <img src="webs/src/assets/images/logo.svg" width="280px" />
   
