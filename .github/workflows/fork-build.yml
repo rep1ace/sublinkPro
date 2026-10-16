@@ -37,6 +37,8 @@ jobs:
       - name: Build frontend
         working-directory: webs
         run: yarn run build
+      - name: Check production frontend assets
+        run: node --test scripts/tests/frontend-build.test.mjs
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
@@ -96,6 +98,7 @@ jobs:
 
           - Preserve TW → 🇹🇼 in the country rules UI, node displays and backend renaming.
           - Use 🇹🇼 for Taiwan groups in the bundled default templates.
+          - PWA manifest requests carry access cookies; production frontend assets are regression checked.
           - Linux amd64 binary with the frontend embedded; compatible with the existing systemd deployment.
           - Verify the download with SHA256SUMS. Back up the database before upgrading.
 

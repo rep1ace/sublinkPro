@@ -46,6 +46,8 @@ export default defineConfig(({ mode }) => {
       jsconfigPaths(),
       VitePWA({
         registerType: 'autoUpdate',
+        // Private deployments require the access cookie when fetching the manifest.
+        useCredentials: true,
         includeAssets: ['images/favicon.ico', 'images/favicon.svg'],
         manifest: {
           name: 'Sublink Pro',

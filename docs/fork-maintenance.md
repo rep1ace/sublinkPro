@@ -46,6 +46,16 @@ git tag v1.2.20-tw.2   # use the matching upstream version + next fork revision
 git push origin v1.2.20-tw.2
 ```
 
+## Reverse proxy and browser checks
+
+Proxy the private UI entry to the application rather than serving a copied
+`index.html`: its hashed JS filenames change between builds. Keep the existing
+private-entry cookie checks in front of the proxy. PWA manifest links use
+`crossorigin="use-credentials"` so those requests carry the same access cookie.
+The fork omits the external Fomo script, matching the previous private homepage.
+After upgrading, verify the actual HTTPS entry, its module scripts and manifest
+in a browser; a successful version API response alone does not verify the UI.
+
 ## Existing systemd deployment
 
 Keep `/opt/sublinkpro/sublinkPro`, `/etc/systemd/system/sublinkpro.service`,
@@ -72,6 +82,7 @@ Use Go from `go.mod`, Node 24 and Yarn from `webs/package.json` through Corepack
 ```bash
 node --test scripts/tests/country-flags.test.mjs
 (cd webs && yarn install --immutable && yarn run lint && yarn run build)
+node --test scripts/tests/frontend-build.test.mjs
 golangci-lint run
 go test ./...
 cp -a webs/dist static

@@ -38,6 +38,14 @@ git tag v1.2.20-tw.2   # 换成对应上游版本及下一个修复版序号
 git push origin v1.2.20-tw.2
 ```
 
+## 反向代理与浏览器检查
+
+私有界面入口应反向代理到应用，避免使用复制的 `index.html`：构建更新会改变带哈希的 JS 文件名。
+反向代理前保留原有私有入口 Cookie 校验。PWA manifest 链接设置
+`crossorigin="use-credentials"`，让请求携带同一访问 Cookie。
+本分支不加载外部 Fomo 脚本，与此前私有首页保持一致。
+升级后需在浏览器验证实际 HTTPS 入口、模块脚本和 manifest；版本接口成功不足以验证页面可用。
+
 ## 现有 systemd 部署
 
 继续沿用 `/opt/sublinkpro/sublinkPro`、`/etc/systemd/system/sublinkpro.service`、
@@ -60,6 +68,7 @@ git push origin v1.2.20-tw.2
 ```bash
 node --test scripts/tests/country-flags.test.mjs
 (cd webs && yarn install --immutable && yarn run lint && yarn run build)
+node --test scripts/tests/frontend-build.test.mjs
 golangci-lint run
 go test ./...
 cp -a webs/dist static
